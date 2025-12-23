@@ -34,21 +34,21 @@
 1. **Сборка и запуск системы:**
 Выполните команду в корне проекта:
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 
 ```
 
 2. **Остановка системы:**
 Для остановки с удалением контейнеров выполните:
 ```bash
-docker-compose down
+docker compose down
 
 ```
 
 
 Для полной очистки базы данных добавьте флаг `-v`:
 ```bash
-docker-compose down -v
+docker compose down -v
 
 ```
 
