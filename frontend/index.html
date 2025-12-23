@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gozon Store</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; padding-top: 20px; }
+        .card { margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .status-NEW { color: #007bff; font-weight: bold; }
+        .status-FINISHED { color: #198754; font-weight: bold; }
+        .status-CANCELLED { color: #dc3545; font-weight: bold; }
+        .status-UNKNOWN { color: gray; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="text-center mb-4">🛒 Gozon Store</h1>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">👤 Профиль</div>
+        <div class="card-body">
+            <div class="input-group mb-3">
+                <span class="input-group-text">User ID</span>
+                <input type="number" id="userId" class="form-control" value="100" placeholder="Введите ID">
+                <button class="btn btn-outline-primary" id="loginBtn" onclick="manualLogin()">Войти / Обновить</button>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="btn btn-sm btn-success" onclick="createAccount()">Создать аккаунт (если нет)</button>
+                <small class="text-muted" id="lastUpdate">Не обновлялось</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">💰 Кошелек</div>
+                <div class="card-body text-center">
+                    <h2 id="balanceDisplay">--- ₽</h2>
+                    <p class="text-muted">Текущий баланс</p>
+                    <hr>
+                    <div class="input-group">
+                        <input type="number" id="amountInput" class="form-control" placeholder="Сумма" value="1000">
+                        <button class="btn btn-success" onclick="addFunds()">Пополнить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">🛍 Купить товар</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label>Цена товара:</label>
+                        <input type="number" id="orderCost" class="form-control" value="200">
+                    </div>
+                    <button class="btn btn-primary w-100" id="buyBtn" onclick="createOrder()">Оформить заказ</button>
+                    <small class="text-muted d-block mt-2 text-center">Статус обновится автоматически</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header bg-dark text-white d-flex justify-content-between">
+            <span>📦 Ваши заказы</span>
+            <span class="badge bg-secondary" id="orderCount">0</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-light">
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Сумма</th>
+                        <th scope="col">Статус</th>
+                    </tr>
+                    </thead>
+                    <tbody id="ordersTable">
+                    <tr><td colspan="3" class="text-center">Нажмите "Войти", чтобы загрузить данные</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = '/api';
+    let autoRefreshInterval = null;
+
+    async function manualLogin() {
+        const btn = document.getElementById('loginBtn');
+        const originalText = btn.innerText;
+
+        btn.innerText = "Загрузка...";
+        btn.disabled = true;
+
+        await updateAllData();
+        startPolling();
+
+        btn.innerText = "Обновлено!";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }, 1000);
+    }
+
+    function startPolling() {
+        if (!autoRefreshInterval) {
+            console.log("Запуск автообновления...");
+            autoRefreshInterval = setInterval(updateAllData, 2000);
+        }
+    }
+
+    async function updateAllData() {
+        const uid = document.getElementById('userId').value;
+        if (!uid) return;
+
+        const ts = new Date().getTime();
+
+        const now = new Date();
+        document.getElementById('lastUpdate').innerText = `Обновлено: ${now.toLocaleTimeString()}`;
+
+        try {
+            const res = await fetch(`${API_BASE}/payments/balance?user_id=${uid}&_t=${ts}`);
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('balanceDisplay').innerText = data.balance + ' ₽';
+            } else {
+                document.getElementById('balanceDisplay').innerText = 'Нет счета';
+            }
+        } catch (e) { console.error("Ошибка баланса:", e); }
+
+        try {
+            const res = await fetch(`${API_BASE}/orders/orders?user_id=${uid}&_t=${ts}`);
+            if (res.ok) {
+                const data = await res.json();
+                console.log("Получены заказы:", data);
+                renderOrders(data.orders);
+            }
+        } catch (e) { console.error("Ошибка заказов:", e); }
+    }
+
+    function renderOrders(orders) {
+        const tbody = document.getElementById('ordersTable');
+        const countBadge = document.getElementById('orderCount');
+
+        if (!orders) orders = [];
+
+        countBadge.innerText = orders.length;
+        tbody.innerHTML = '';
+
+        if (orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Список заказов пуст</td></tr>';
+            return;
+        }
+
+        orders.forEach(order => {
+            const status = order.status || 'UNKNOWN';
+            const amount = order.amount || 0;
+            const id = order.id || '?';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>#${id}</strong></td>
+                <td>${amount} ₽</td>
+                <td class="status-${status}">${status}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function createAccount() {
+        const uid = document.getElementById('userId').value;
+        try {
+            const res = await fetch(`${API_BASE}/payments/create_account?user_id=${uid}`, { method: 'POST' });
+            if (res.status === 201) alert(`Аккаунт ${uid} успешно создан!`);
+            else if (res.status === 400) alert('Аккаунт уже существует или ошибка.');
+            updateAllData();
+        } catch (e) { alert('Ошибка сети'); }
+    }
+
+    async function addFunds() {
+        const uid = document.getElementById('userId').value;
+        const amount = document.getElementById('amountInput').value;
+        try {
+            await fetch(`${API_BASE}/payments/add_funds?user_id=${uid}&amount=${amount}`, { method: 'POST' });
+            setTimeout(updateAllData, 200);
+        } catch (e) { alert('Ошибка пополнения'); }
+    }
+
+    async function createOrder() {
+        const uid = document.getElementById('userId').value;
+        const cost = document.getElementById('orderCost').value;
+        const btn = document.getElementById('buyBtn');
+
+        btn.disabled = true;
+        btn.innerText = "Отправка...";
+
+        try {
+            const res = await fetch(`${API_BASE}/orders/create_order?user_id=${uid}&amount=${cost}`, { method: 'POST' });
+            if (res.ok) {
+                setTimeout(updateAllData, 500);
+            } else {
+                alert('Ошибка создания заказа');
+            }
+        } catch (e) { alert('Ошибка сети'); }
+
+        btn.disabled = false;
+        btn.innerText = "Оформить заказ";
+    }
+</script>
+</body>
+</html>

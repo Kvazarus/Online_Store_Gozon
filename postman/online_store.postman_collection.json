@@ -1,0 +1,198 @@
+{
+  "info": {
+    "_postman_id": "b6a7c3d2-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+    "name": "Online Store Gozon API",
+    "description": "Коллекция запросов для тестирования микросервисной архитектуры интернет-магазина Gozon (Orders + Payments).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Payments Service",
+      "item": [
+        {
+          "name": "1. Create Account",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/api/payments/create_account?user_id=100",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "payments",
+                "create_account"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "100",
+                  "description": "ID пользователя"
+                }
+              ]
+            },
+            "description": "Создает счет для пользователя с балансом 0."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Add Funds",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/api/payments/add_funds?user_id=100&amount=1000",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "payments",
+                "add_funds"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "100"
+                },
+                {
+                  "key": "amount",
+                  "value": "1000"
+                }
+              ]
+            },
+            "description": "Пополняет баланс пользователя."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Get Balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/api/payments/balance?user_id=100",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "payments",
+                "balance"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Возвращает текущий баланс."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders Service",
+      "item": [
+        {
+          "name": "4. Create Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/api/orders/create_order?user_id=100&amount=200",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "orders",
+                "create_order"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "100"
+                },
+                {
+                  "key": "amount",
+                  "value": "200"
+                }
+              ]
+            },
+            "description": "Создает заказ в статусе NEW и запускает асинхронную оплату через RabbitMQ."
+          },
+          "response": []
+        },
+        {
+          "name": "5. Get Order Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/api/orders/order?id=1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "orders",
+                "order"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID заказа из предыдущего запроса"
+                }
+              ]
+            },
+            "description": "Проверка статуса (NEW -> FINISHED или CANCELLED)."
+          },
+          "response": []
+        },
+        {
+          "name": "6. Get User Orders List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/api/orders/orders?user_id=100",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "orders",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Получение списка всех заказов пользователя."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
